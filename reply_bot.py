@@ -3,24 +3,23 @@
 import os
 import requests
 
+# Récupération des données d'environnement
 token = os.getenv("GITHUB_TOKEN")
 repo = os.getenv("REPO")
 issue_number = os.getenv("ISSUE_NUMBER")
 comment_body = os.getenv("COMMENT_BODY")
 comment_author = os.getenv("COMMENT_AUTHOR")
+bot_username = os.getenv("GITHUB_ACTOR")  # C'est l'identité du bot dans le contexte du workflow
 
-# Vérifie si le commentaire vient du bot lui-même
-# Remplace ce nom par celui de ton bot GitHub s'il est différent
-BOT_USERNAME = "github-actions[bot]"
-
-if comment_author == BOT_USERNAME:
-    print("🤖 Le commentaire vient du bot. Pas de réponse nécessaire.")
+# 🔒 Empêche le bot de répondre à lui-même
+if comment_author == bot_username:
+    print(f"⛔ Ignoré : le commentaire vient du bot lui-même ({bot_username}).")
     exit(0)
 
-# Génère la réponse
+# 🧠 Prépare la réponse
 reply = f"🔥 Merci @{comment_author} pour ton commentaire :\n> {comment_body}"
 
-# Envoie la réponse
+# 📤 Envoie la réponse
 url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
 headers = {
     "Authorization": f"Bearer {token}",
@@ -36,5 +35,5 @@ response = requests.post(url, headers=headers, json=payload)
 if response.status_code == 201:
     print("✅ Réponse postée avec succès")
 else:
-    print("❌ Échec :", response.status_code)
+    print("❌ Erreur :", response.status_code)
     print(response.text)
