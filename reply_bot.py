@@ -9,13 +9,18 @@ issue_number = os.getenv("ISSUE_NUMBER")
 comment_body = os.getenv("COMMENT_BODY")
 comment_author = os.getenv("COMMENT_AUTHOR")
 
-if not all([token, repo, issue_number, comment_body]):
-    raise Exception("❌ Variable d’environnement manquante")
+# Vérifie si le commentaire vient du bot lui-même
+# Remplace ce nom par celui de ton bot GitHub s'il est différent
+BOT_USERNAME = "github-actions[bot]"
 
-# Générer une réponse
-reply = f"👋 Merci @{comment_author} pour ton commentaire :\n> {comment_body}"
+if comment_author == BOT_USERNAME:
+    print("🤖 Le commentaire vient du bot. Pas de réponse nécessaire.")
+    exit(0)
 
-# Envoyer la réponse via l’API GitHub
+# Génère la réponse
+reply = f"🔥 Merci @{comment_author} pour ton commentaire :\n> {comment_body}"
+
+# Envoie la réponse
 url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
 headers = {
     "Authorization": f"Bearer {token}",
