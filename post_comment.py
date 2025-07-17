@@ -21,3 +21,7 @@ def post_comment(token, repo, pr_number, comment):
     else:
         print("❌ Erreur lors du post du commentaire :", response.status_code)
         print("🪵 Réponse :", response.text)
+
+    print("❌ Erreur :", response.status_code)
+    print("Réponse brute:", response.text)
+
