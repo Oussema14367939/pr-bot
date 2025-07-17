@@ -2,7 +2,6 @@ import os
 import requests
 import sys
 
-# ✅ Fonction utilitaire pour récupérer une variable obligatoire
 def get_env_var(name):
     value = os.getenv(name)
     if value is None:
@@ -10,7 +9,7 @@ def get_env_var(name):
         sys.exit(1)
     return value
 
-# 🔐 Récupération sécurisée des variables d'environnement
+# 🔐 Récupération des variables
 token = get_env_var("GITHUB_TOKEN")
 repo = get_env_var("REPO")
 issue_number = get_env_var("ISSUE_NUMBER")
@@ -18,12 +17,15 @@ comment_body = get_env_var("COMMENT_BODY")
 comment_author = get_env_var("COMMENT_AUTHOR")
 bot_username = os.getenv("GITHUB_ACTOR") or "unknown"
 
-
+# 🛑 Empêcher le bot de répondre à lui-même
+if comment_author == bot_username:
+    print(f"⛔ Ignoré : commentaire fait par le bot lui-même ({bot_username})")
+    sys.exit(0)
 
 # 🧠 Préparer la réponse
 reply = f"🔥 Merci @{comment_author} pour ton commentaire :\n> {comment_body}"
 
-# 📤 Envoie la réponse
+# 📤 Envoi de la réponse
 url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
 headers = {
     "Authorization": f"Bearer {token}",
