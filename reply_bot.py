@@ -11,11 +11,6 @@ comment_body = os.getenv("COMMENT_BODY")
 comment_author = os.getenv("COMMENT_AUTHOR")
 bot_username = os.getenv("GITHUB_ACTOR")  # C'est l'identité du bot dans le contexte du workflow
 
-
-print(f"[DEBUG] Comment author: {comment_author}, bot username: {bot_username}")
-print(f"[DEBUG] Comment body: {comment_body}")
-
-
 # 🔒 Empêche le bot de répondre à lui-même
 if comment_author == bot_username:
     print(f"⛔ Ignoré : le commentaire vient du bot lui-même ({bot_username}).")
@@ -41,4 +36,4 @@ if response.status_code == 201:
     print("✅ Réponse postée avec succès")
 else:
     print("❌ Erreur :", response.status_code)
-    print(response.text)
+    print(response.text) 
