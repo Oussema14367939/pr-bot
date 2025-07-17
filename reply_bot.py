@@ -10,27 +10,30 @@ issue_number = os.getenv("ISSUE_NUMBER")
 comment_body = os.getenv("COMMENT_BODY")
 comment_author = os.getenv("COMMENT_AUTHOR")
 
-# 🔍 Récupération du nom réel du bot (lié au token utilisé)
-headers = {
-    "Authorization": f"Bearer {token}",
-    "Accept": "application/vnd.github.v3+json"
-}
-response_user = requests.get("https://api.github.com/user", headers=headers)
-bot_username = response_user.json().get("login")
+# Ligne temporaire à tester (force un nom de bot différent de comment_author)
+bot_username = "mon-vrai-bot"  # Remplace par le nom GitHub de ton bot (ou un autre nom unique)
+
+# Ligne actuelle à commenter temporairement
+# response_user = requests.get("https://api.github.com/user", headers={"Authorization": f"Bearer {token}"})
+# bot_username = response_user.json().get("login")
 
 print(f"[DEBUG] Comment author: {comment_author}, bot username: {bot_username}")
 print(f"[DEBUG] Comment body: {comment_body}")
 
-# 🔒 Empêche le bot de répondre à lui-même
+# Empêche le bot de répondre à lui-même
 if comment_author == bot_username:
     print(f"⛔ Ignoré : le commentaire vient du bot lui-même ({bot_username}).")
     exit(0)
 
-# 🧠 Prépare la réponse
+# Prépare la réponse
 reply = f"🔥 Merci @{comment_author} pour ton commentaire :\n> {comment_body}"
 
-# 📤 Envoie la réponse
+# Envoie la réponse
 url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github.v3+json"
+}
 payload = {
     "body": reply
 }
