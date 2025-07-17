@@ -8,7 +8,7 @@ token = os.getenv("GITHUB_TOKEN")
 repo = os.getenv("REPO")
 issue_number = os.getenv("ISSUE_NUMBER")
 comment_body = os.getenv("COMMENT_BODY")
-comment_author = os.getenv("COMMENT_AUTHOR")
+bot_username = "mon-vrai-bot"
 
 # 🔍 Récupération du nom réel du bot (lié au token utilisé)
 headers = {
