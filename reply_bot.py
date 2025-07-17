@@ -1,5 +1,3 @@
-# reply_bot.py
-
 import os
 import requests
 
@@ -10,8 +8,8 @@ issue_number = os.getenv("ISSUE_NUMBER")
 comment_body = os.getenv("COMMENT_BODY")
 comment_author = os.getenv("COMMENT_AUTHOR")
 
-# Ligne temporaire à tester (force un nom de bot différent de comment_author)
-bot_username = "mon-vrai-bot"  # Remplace par le nom GitHub de ton bot (ou un autre nom unique)
+# Ligne temporaire à tester (nom fixe pour le bot)
+bot_username = "mon-vrai-bot"  # Remplace par le nom GitHub de ton bot
 
 # Ligne actuelle à commenter temporairement
 # response_user = requests.get("https://api.github.com/user", headers={"Authorization": f"Bearer {token}"})
