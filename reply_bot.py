@@ -15,12 +15,14 @@ repo = get_env_var("REPO")
 issue_number = get_env_var("ISSUE_NUMBER")
 comment_body = get_env_var("COMMENT_BODY")
 comment_author = get_env_var("COMMENT_AUTHOR")
-bot_username = os.getenv("GITHUB_ACTOR") or "unknown"
 
-# 🛑 Empêcher le bot de répondre à lui-même
+
+bot_username = get_env_var("BOT_USERNAME")
+
 if comment_author == bot_username:
     print(f"⛔ Ignoré : commentaire fait par le bot lui-même ({bot_username})")
     sys.exit(0)
+
 
 # 🧠 Préparer la réponse
 reply = f"🔥 Merci @{comment_author} pour ton commentaire :\n> {comment_body}"

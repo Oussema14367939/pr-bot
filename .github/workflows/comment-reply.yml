@@ -28,5 +28,6 @@ jobs:
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
+          BOT_USERNAME: pr-reply-bot  # remplace par le vrai nom du compte GitHub du bot
         run: |
           python reply_bot.py
