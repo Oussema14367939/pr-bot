@@ -22,4 +22,5 @@ jobs:
 
       - name: Run bot
         run: |
-          python bot.py --pr_number "$PR_NUMBER" --repo "$REPO"
+          python bot.py --pr_number "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+
