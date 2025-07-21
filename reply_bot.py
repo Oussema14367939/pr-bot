@@ -73,3 +73,9 @@ if resp.status_code == 201:
     print("✅ Réponse postée avec succès")
 else:
     print(f"❌ Erreur {resp.status_code} : {resp.text}")
+
+print(f"Repo: {repo}")
+print(f"Issue number: {issue_number}")
+print(f"Comment body: {comment_body}")
+print(f"Comment author: {comment_author}")
+print(f"Bot username: {bot_username}")

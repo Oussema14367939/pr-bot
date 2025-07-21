@@ -7,7 +7,7 @@ on:
 jobs:
   reply:
     runs-on: ubuntu-latest
-    if: github.event.issue.pull_request != null  # assure que c'est une PR
+    if: github.event.issue.pull_request != null
 
     steps:
       - name: Checkout
@@ -22,5 +22,13 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run reply bot
-        run: |
-          python reply_bot.py
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+          INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          PRIVATE_KEY_PATH: prhelper.2025-07-21.private-key.pem  # si tu commit la clé (à éviter en prod)
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          BOT_USERNAME: prhelper[bot]  # le login exact du bot
+        run: python reply_bot.py
