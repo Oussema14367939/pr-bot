@@ -1,54 +1,74 @@
-# bot.py
-
-import argparse
 import os
 import requests
-from datetime import datetime
+import jwt
+import time
+from flask import Flask, request, jsonify
 
-from get_modified_files import get_modified_files
-from generate_comment import generate_comment
-from post_comment import post_comment
+# CONFIGURATION
+APP_ID = os.environ.get("APP_ID")
+INSTALLATION_ID = os.environ.get("INSTALLATION_ID")
+REPO = os.environ.get("REPO")
 
-# Lire les arguments depuis GitHub Actions
-parser = argparse.ArgumentParser()
-parser.add_argument("--pr_number", required=True, type=int, help="Pull request number")
-parser.add_argument("--repo", required=True, help="Repository name (e.g. user/repo)")
-args = parser.parse_args()
+# Charger la clé privée depuis un fichier local ou depuis les variables d'environnement
+def load_private_key():
+    if 'PRIVATE_KEY' in os.environ:
+        return os.environ['PRIVATE_KEY']
+    else:
+        with open("private-key.pem", "r") as key_file:
+            return key_file.read()
 
-# Extraire infos
-pr_number = args.pr_number
-repo = args.repo
+PRIVATE_KEY = load_private_key()
 
-from auth import generate_jwt, get_installation_token, APP_ID, INSTALLATION_ID, PRIVATE_KEY_PATH
+# GÉNÉRER UN JWT
+def generate_jwt():
+    payload = {
+        "iat": int(time.time()),
+        "exp": int(time.time()) + (10 * 60),
+        "iss": APP_ID
+    }
+    return jwt.encode(payload, PRIVATE_KEY, algorithm="RS256")
 
-jwt_token = generate_jwt(APP_ID, PRIVATE_KEY_PATH)
-token = get_installation_token(jwt_token, INSTALLATION_ID)
+# RÉCUPÉRER LE TOKEN D’ACCÈS
+def get_installation_token(jwt_token):
+    headers = {
+        "Authorization": f"Bearer {jwt_token}",
+        "Accept": "application/vnd.github+json"
+    }
+    url = f"https://api.github.com/app/installations/{INSTALLATION_ID}/access_tokens"
+    response = requests.post(url, headers=headers)
+    response.raise_for_status()
+    return response.json()["token"]
 
+# COMMENTER UNE PR
+def comment_on_pr(token, pr_number, repo, message):
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json"
+    }
+    url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
+    data = {"body": message}
+    response = requests.post(url, headers=headers, json=data)
+    response.raise_for_status()
 
-# Étape 1 : Obtenir les fichiers modifiés
-print("📁 Récupération des fichiers modifiés depuis GitHub...")
-modified_files = get_modified_files(token, repo, pr_number)
-print("✅ Fichiers modifiés :", modified_files)
+# FLASK APP POUR WEBHOOK
+app = Flask(__name__)
 
-# Étape 2 : Récupérer infos sur l’auteur et la date de la PR
-headers = {
-    "Authorization": f"Bearer {token}",
-    "Accept": "application/vnd.github.v3+json"
-}
-pr_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-response = requests.get(pr_url, headers=headers)
-if response.status_code != 200:
-    raise Exception("Erreur lors de la récupération des détails de la PR")
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    event = request.headers.get("X-GitHub-Event")
+    payload = request.get_json()
 
-pr_data = response.json()
-author = pr_data["user"]["login"]
-created_at = pr_data["created_at"]
-created_at_formatted = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M UTC")
+    if event == "pull_request" and payload["action"] in ["opened", "reopened"]:
+        pr_number = payload["pull_request"]["number"]
+        repo_full_name = payload["repository"]["full_name"]
 
-# Étape 3 : Générer un commentaire
-comment = generate_comment(modified_files, author, created_at_formatted)
-print("📝 Commentaire généré :\n", comment)
+        jwt_token = generate_jwt()
+        access_token = get_installation_token(jwt_token)
 
-# Étape 4 : Poster le commentaire sur la PR
-print("🚀 Envoi du commentaire sur la Pull Request...")
-post_comment(token, repo, pr_number, comment)
+        message = "✅ Merci pour votre Pull Request ! Elle sera examinée bientôt."
+        comment_on_pr(access_token, pr_number, repo_full_name, message)
+
+    return jsonify({"status": "ok"}), 200
+
+if __name__ == "__main__":
+    app.run(port=5000)

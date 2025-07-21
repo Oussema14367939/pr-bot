@@ -1,40 +1,28 @@
-name: Respond to PR Comments
+name: 🤖 Commentaire automatique PR
 
 on:
-  issue_comment:
-    types: [created]
+  pull_request:
+    types: [opened, reopened]
 
 jobs:
-  reply:
+  comment:
     runs-on: ubuntu-latest
-    if: github.event.issue.pull_request != null
-
     steps:
-      - name: Checkout repository
+      - name: 📥 Cloner le dépôt
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: 🐍 Installer Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: 📦 Installer les dépendances
+        run: pip install -r requirements.txt
 
-      - name: Write private key to file
-        run: |
-          echo "${{ secrets.PRIVATE_KEY }}" > key.pem
-
-      - name: Run reply bot
+      - name: 🤖 Lancer le bot
+        run: python bot.py
         env:
           APP_ID: ${{ secrets.APP_ID }}
           INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
-          PRIVATE_KEY_PATH: key.pem
           REPO: ${{ github.repository }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
-          BOT_USERNAME: prhelper[bot]
-        run: python reply_bot.py
+          # Pas de PRIVATE_KEY ici, car on utilise un fichier en local (ou fallback dans bot.py)
