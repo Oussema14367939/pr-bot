@@ -1,4 +1,4 @@
-name: Respond to PR comment
+name: Respond to PR Comments
 
 on:
   issue_comment:
@@ -7,27 +7,34 @@ on:
 jobs:
   reply:
     runs-on: ubuntu-latest
-    if: github.event.issue.pull_request != null  # assure que c'est une PR
+    if: github.event.issue.pull_request != null
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.x'
 
       - name: Install dependencies
-        run: pip install requests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Write private key to file
+        run: |
+          echo "${{ secrets.PRIVATE_KEY }}" > key.pem
 
       - name: Run reply bot
         env:
-          GITHUB_TOKEN: ${{ secrets.BOT_PAT }}
+          APP_ID: ${{ secrets.APP_ID }}
+          INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          PRIVATE_KEY_PATH: key.pem
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          REPO: ${{ github.repository }}
-          BOT_USERNAME: pr-reply-bot  # remplace par le vrai nom du compte GitHub du bot
-        run: |
-          python reply_bot.py
+          BOT_USERNAME: prhelper[bot]
+        run: python reply_bot.py

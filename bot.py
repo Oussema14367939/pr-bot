@@ -18,10 +18,12 @@ args = parser.parse_args()
 # Extraire infos
 pr_number = args.pr_number
 repo = args.repo
-token = os.getenv("GITHUB_TOKEN")
 
-if not token:
-    raise ValueError("GITHUB_TOKEN non défini dans les secrets")
+from auth import generate_jwt, get_installation_token, APP_ID, INSTALLATION_ID, PRIVATE_KEY_PATH
+
+jwt_token = generate_jwt(APP_ID, PRIVATE_KEY_PATH)
+token = get_installation_token(jwt_token, INSTALLATION_ID)
+
 
 # Étape 1 : Obtenir les fichiers modifiés
 print("📁 Récupération des fichiers modifiés depuis GitHub...")

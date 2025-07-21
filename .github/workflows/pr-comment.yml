@@ -21,9 +21,6 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run bot
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_PAT }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
         run: |
-          python bot.py --pr_number "$PR_NUMBER" --repo "$REPO"
+          python bot.py --pr_number "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+
