@@ -22,5 +22,4 @@ jobs:
           projectBaseDir: .
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: Oussema14367939_pr-bot
-          SONAR_ORGANIZATION: Oussema14367939
+
