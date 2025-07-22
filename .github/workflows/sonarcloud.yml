@@ -1,4 +1,4 @@
-name: SonarCloud Analysis
+name: SonarCloud
 
 on:
   pull_request:
@@ -6,12 +6,12 @@ on:
       - main
 
 jobs:
-  analyze:
-    name: Run SonarCloud Analysis
+  sonarcloud:
+    name: SonarCloud Analysis
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -24,11 +24,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run SonarCloud scan
-        run: |
-          pip install sonar-scanner-cli
-          sonar-scanner \
-            -Dsonar.projectKey=Oussema14367939_pr-bot \
-            -Dsonar.organization=oussema14367939 \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          projectBaseDir: .
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: Oussema14367939_pr-bot
+          SONAR_ORGANIZATION: oussema14367939
