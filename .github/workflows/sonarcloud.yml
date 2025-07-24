@@ -22,7 +22,7 @@ jobs:
           projectBaseDir: .
           args: >
             -Dsonar.projectKey=Oussema14367939_pr-bot
-            -Dsonar.organization=Oussema14367939
+            -Dsonar.organization=oussema14367939
             -Dsonar.host.url=https://sonarcloud.io
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
