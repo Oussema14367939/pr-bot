@@ -1,5 +1,3 @@
-# generate_comment.py
-
 import requests
 import os
 
@@ -9,14 +7,13 @@ def generate_comment(fichiers, auteur, date):
 
     commentaire = f"🧠 Revue intelligente des fichiers modifiés :\n"
 
-    api_key = os.getenv("DEEPSEEK_API_KEY")  # Tu peux renommer ça en GEMINI_API_KEY pour plus de clarté
+    api_key = os.getenv("DEEPSEEK_API_KEY")  # ta clé API Google Generative Language
 
     if not api_key:
         return "❌ Clé API Gemini manquante."
 
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
-
-
+    model = "models/text-bison-001"
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateText?key={api_key}"
 
     headers = {
         "Content-Type": "application/json"
@@ -40,15 +37,11 @@ Réponds uniquement pour ce fichier.
 """
 
         data = {
-            "contents": [
-                {
-                    "parts": [
-                        {
-                            "text": prompt
-                        }
-                    ]
-                }
-            ]
+            "prompt": {
+                "text": prompt
+            },
+            "temperature": 0.7,
+            "maxOutputTokens": 512
         }
 
         response = requests.post(endpoint, headers=headers, json=data)
@@ -58,7 +51,7 @@ Réponds uniquement pour ce fichier.
             continue
 
         try:
-            content = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+            content = response.json()["candidates"][0]["output"]
         except Exception as e:
             commentaire += f"\n⚠️ Erreur de parsing de réponse Gemini pour `{fichier}` : {e}\n"
             continue
