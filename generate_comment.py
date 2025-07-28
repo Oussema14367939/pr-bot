@@ -14,7 +14,8 @@ def generate_comment(fichiers, auteur, date):
     if not api_key:
         return "❌ Clé API Gemini manquante."
 
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+    endpoint = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={api_key}"
+
 
     headers = {
         "Content-Type": "application/json"
