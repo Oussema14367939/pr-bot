@@ -9,9 +9,16 @@ def generate_comment(fichiers, auteur, date):
 
     commentaire = f"🧠 Revue intelligente des fichiers modifiés :\n"
 
-    api_key = os.getenv("DEEPSEEK_API_KEY")
+    api_key = os.getenv("DEEPSEEK_API_KEY")  # Tu peux renommer ça en GEMINI_API_KEY pour plus de clarté
+
     if not api_key:
-        return "❌ Clé API DeepSeek manquante."
+        return "❌ Clé API Gemini manquante."
+
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+
+    headers = {
+        "Content-Type": "application/json"
+    }
 
     for fichier in fichiers:
         try:
@@ -30,29 +37,31 @@ Donne une revue utile de ce fichier (bugs potentiels, clarté du code, améliora
 Réponds uniquement pour ce fichier.
 """
 
-        response = requests.post(
-            "https://api.deepseek.com/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "deepseek-chat",
-                "messages": [
-                    {"role": "system", "content": "Tu es un expert en revue de code."},
-                    {"role": "user", "content": prompt}
-                ]
-            }
-        )
+        data = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        }
+
+        response = requests.post(endpoint, headers=headers, json=data)
 
         if response.status_code != 200:
-            commentaire += f"\n❌ Erreur DeepSeek pour `{fichier}` : {response.status_code}\n"
+            commentaire += f"\n❌ Erreur Gemini pour `{fichier}` : {response.status_code} - {response.text}\n"
             continue
 
-        data = response.json()
-        content = data["choices"][0]["message"]["content"]
+        try:
+            content = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:
+            commentaire += f"\n⚠️ Erreur de parsing de réponse Gemini pour `{fichier}` : {e}\n"
+            continue
+
         commentaire += f"\n🗂️ **{fichier}**\n{content}\n"
 
     commentaire += f"\n---\n👤 Auteur : **{auteur}**\n📅 Créé le : **{date}**"
     return commentaire
-
