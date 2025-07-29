@@ -24,7 +24,7 @@ comment_body = get_env_var("COMMENT_BODY")
 comment_author = get_env_var("COMMENT_AUTHOR")
 bot_username = get_env_var("BOT_USERNAME")
 
-# 🔐 Clé API Gemini (nommée DEEPSEEK_API_KEY ici)
+# 🔐 Clé API Gemini (DEEPSEEK_API_KEY)
 gemini_api_key = get_env_var("DEEPSEEK_API_KEY")
 gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
 
@@ -65,7 +65,9 @@ try:
         print(f"❌ Erreur Gemini {response.status_code} : {response.text}")
         generated_reply = f"⚠️ Désolé @{comment_author}, une erreur est survenue avec le moteur d'IA."
     else:
-        generated_reply = response.json()["candidates"][0]["content"]
+        # ✅ Extraire proprement le texte de la réponse Gemini
+        response_json = response.json()
+        generated_reply = response_json["candidates"][0]["content"]["parts"][0]["text"]
 except Exception as e:
     print(f"❌ Exception lors de l'appel à Gemini : {e}")
     generated_reply = f"⚠️ Une erreur est survenue en traitant votre commentaire, @{comment_author}."
