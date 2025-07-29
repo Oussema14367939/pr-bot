@@ -65,21 +65,21 @@ try:
     print(f"DEBUG - Status code Gemini : {response.status_code}")
     print(f"DEBUG - Response Gemini : {response.text}")
 
-    if response.status_code != 200:
-        print(f"❌ Erreur Gemini {response.status_code} : {response.text}")
-        generated_reply = f"⚠️ Désolé @{comment_author}, une erreur est survenue avec le moteur d'IA."
-    else:
-        response_json = response.json()
-        candidates = response_json.get("candidates", [])
-        generated_reply = ""
+    #if response.status_code != 200:
+        #print(f"❌ Erreur Gemini {response.status_code} : {response.text}")
+        #generated_reply = f"⚠️ Désolé @{comment_author}, une erreur est survenue avec le moteur d'IA."
+    #else:
+    response_json = response.json()
+    candidates = response_json.get("candidates", [])
+    generated_reply = ""
 
-        if candidates:
-            parts = candidates[0].get("content", {}).get("parts", [])
-            for part in parts:
-                generated_reply += part.get("text", "")
+    if candidates:
+        parts = candidates[0].get("content", {}).get("parts", [])
+        for part in parts:
+            generated_reply += part.get("text", "")
 
-        if not generated_reply.strip():
-            generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse utile."
+    if not generated_reply.strip():
+        generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse utile."
 
 except Exception as e:
     print(f"❌ Exception lors de l'appel à Gemini : {e}")
