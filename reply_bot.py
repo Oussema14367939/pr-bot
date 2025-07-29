@@ -33,30 +33,31 @@ if comment_author == bot_username:
     print(f"⛔ Ignoré : commentaire fait par le bot lui-même ({bot_username})")
     sys.exit(0)
 
-# ✍️ Étape 1 : Construire le prompt
+# ✍️ Étape 1 : Construire le prompt pour Gemini
 prompt = f"""
 Tu es un reviewer intelligent dans une Pull Request GitHub.
-Voici un commentaire de développeur (@{comment_author}) :
+Voici un commentaire d’un développeur (@{comment_author}) :
 
 \"\"\"{comment_body}\"\"\"
 
 Réponds de manière claire, utile, technique et concise.
 """
 
-# 🧠 Étape 2 : Appeler l'API Gemini
+# 🧠 Étape 2 : Appeler l’API Gemini
 gemini_headers = {
     "Content-Type": "application/json",
-    # IMPORTANT : souvent Google attend "Authorization: Bearer <token>", pas x-goog-api-key
-    "Authorization": f"Bearer {gemini_api_key}"
+    "x-goog-api-key": gemini_api_key  # ✅ Correct pour une clé DeepSeek / Gemini
 }
 
 gemini_data = {
-    "prompt": {
-        "text": prompt
-    },
-    "temperature": 0.7,
-    "candidateCount": 1,
-    "maxOutputTokens": 512
+    "contents": [{
+        "parts": [{"text": prompt}],
+        "role": "user"
+    }],
+    "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 512
+    }
 }
 
 try:
@@ -69,31 +70,22 @@ try:
         generated_reply = f"⚠️ Désolé @{comment_author}, une erreur est survenue avec le moteur d'IA."
     else:
         response_json = response.json()
-        # Extraction sécurisée du texte, suivant la structure retournée par Gemini
-        candidates = response_json.get("candidates")
-        if candidates and len(candidates) > 0:
-            candidate = candidates[0]
-            content = candidate.get("content")
-            if isinstance(content, dict):
-                # Parfois "parts" est une liste de dicts avec "text"
-                parts = content.get("parts")
-                if parts and len(parts) > 0:
-                    generated_reply = parts[0].get("text", "")
-                else:
-                    generated_reply = ""
-            elif isinstance(content, str):
-                generated_reply = content
-            else:
-                generated_reply = ""
-        else:
-            generated_reply = ""
-        if not generated_reply:
-            generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse."
+        candidates = response_json.get("candidates", [])
+        generated_reply = ""
+
+        if candidates:
+            parts = candidates[0].get("content", {}).get("parts", [])
+            for part in parts:
+                generated_reply += part.get("text", "")
+
+        if not generated_reply.strip():
+            generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse utile."
+
 except Exception as e:
     print(f"❌ Exception lors de l'appel à Gemini : {e}")
     generated_reply = f"⚠️ Une erreur est survenue en traitant votre commentaire, @{comment_author}."
 
-# 🔧 Construire le message final à poster
+# 💬 Construire le message final à poster sur la PR
 reply = f"""🔥 Merci @{comment_author} pour ton commentaire :
 > {comment_body}
 
@@ -114,7 +106,7 @@ payload = {
 
 jwt_token = jwt.encode(payload, private_key, algorithm="RS256")
 
-# 🪪 Étape 4 : Obtenir le token d'installation GitHub
+# 🪪 Étape 4 : Obtenir le token d’installation GitHub
 access_token_url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
 headers_jwt = {
     "Authorization": f"Bearer {jwt_token}",
@@ -129,7 +121,7 @@ if response.status_code != 201:
 
 token = response.json()["token"]
 
-# 💬 Étape 5 : Poster le commentaire sur la PR
+# 💬 Étape 5 : Poster le commentaire dans la PR
 comment_url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
 headers = {
     "Authorization": f"Bearer {token}",
