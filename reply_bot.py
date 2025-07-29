@@ -46,28 +46,49 @@ Réponds de manière claire, utile, technique et concise.
 # 🧠 Étape 2 : Appeler l'API Gemini
 gemini_headers = {
     "Content-Type": "application/json",
-    "x-goog-api-key": gemini_api_key
+    # IMPORTANT : souvent Google attend "Authorization: Bearer <token>", pas x-goog-api-key
+    "Authorization": f"Bearer {gemini_api_key}"
 }
 
 gemini_data = {
-    "contents": [
-        {
-            "parts": [
-                {"text": prompt}
-            ]
-        }
-    ]
+    "prompt": {
+        "text": prompt
+    },
+    "temperature": 0.7,
+    "candidateCount": 1,
+    "maxOutputTokens": 512
 }
 
 try:
     response = requests.post(gemini_url, headers=gemini_headers, json=gemini_data)
+    print(f"DEBUG - Status code Gemini : {response.status_code}")
+    print(f"DEBUG - Response Gemini : {response.text}")
+
     if response.status_code != 200:
         print(f"❌ Erreur Gemini {response.status_code} : {response.text}")
         generated_reply = f"⚠️ Désolé @{comment_author}, une erreur est survenue avec le moteur d'IA."
     else:
-        # ✅ Extraire proprement le texte de la réponse Gemini
         response_json = response.json()
-        generated_reply = response_json["candidates"][0]["content"]["parts"][0]["text"]
+        # Extraction sécurisée du texte, suivant la structure retournée par Gemini
+        candidates = response_json.get("candidates")
+        if candidates and len(candidates) > 0:
+            candidate = candidates[0]
+            content = candidate.get("content")
+            if isinstance(content, dict):
+                # Parfois "parts" est une liste de dicts avec "text"
+                parts = content.get("parts")
+                if parts and len(parts) > 0:
+                    generated_reply = parts[0].get("text", "")
+                else:
+                    generated_reply = ""
+            elif isinstance(content, str):
+                generated_reply = content
+            else:
+                generated_reply = ""
+        else:
+            generated_reply = ""
+        if not generated_reply:
+            generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse."
 except Exception as e:
     print(f"❌ Exception lors de l'appel à Gemini : {e}")
     generated_reply = f"⚠️ Une erreur est survenue en traitant votre commentaire, @{comment_author}."
