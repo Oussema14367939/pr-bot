@@ -49,3 +49,7 @@ Puis donne une réponse utile et intelligente à ce commentaire.
         return response.json()["candidates"][0]["content"]["parts"][0]["text"]
     except Exception as e:
         return f"⚠️ Désolé @{username}, je n'ai pas pu générer de réponse utile (erreur de parsing)."
+
+# Exemple de test (à commenter dans l'intégration réelle)
+if __name__ == "__main__":
+    print(generate_reply("Peux-tu expliquer ce que fait ce code ?", "Oussema14367939"))
