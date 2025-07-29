@@ -74,12 +74,17 @@ try:
     generated_reply = ""
 
     if candidates:
-        parts = candidates[0].get("content", {}).get("parts", [])
+        content = candidates[0].get("content", {})
+        parts = content.get("parts", [])
         for part in parts:
-            generated_reply += part.get("text", "")
+            if "text" in part:
+                generated_reply += part["text"]
 
     if not generated_reply.strip():
+        print("⚠️ Gemini n'a généré aucune réponse.")
+        print("🧾 Réponse brute :", response_json)
         generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse utile."
+
 
 except Exception as e:
     print(f"❌ Exception lors de l'appel à Gemini : {e}")
