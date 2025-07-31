@@ -1,42 +1,35 @@
 import os
 import sys
 import time
-import jwt  # PyJWT
+import jwt
 import requests
 import json
 
-# 🔧 Récupération sécurisée des variables
 def get_env_var(name):
     value = os.getenv(name)
     if value is None:
-        print(f"❌ Erreur : la variable d'environnement '{name}' est introuvable.")
+        print(f"❌ Variable d'environnement manquante : {name}")
         sys.exit(1)
     return value
 
-# 🔐 Variables GitHub App
+# 📦 Variables d’environnement
 app_id = get_env_var("APP_ID")
 installation_id = get_env_var("INSTALLATION_ID")
 private_key_path = get_env_var("PRIVATE_KEY_PATH")
-
-# 📄 Variables de l'événement GitHub
 repo = get_env_var("REPO")
 issue_number = get_env_var("ISSUE_NUMBER")
 comment_body = get_env_var("COMMENT_BODY")
 comment_author = get_env_var("COMMENT_AUTHOR")
 bot_username = get_env_var("BOT_USERNAME")
+api_key = get_env_var("DEEPSEEK_API_KEY")
 
-# 🔐 Clé API Gemini (DEEPSEEK_API_KEY)
-gemini_api_key = get_env_var("DEEPSEEK_API_KEY")
-gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
-
-# 🤖 Ignorer les commentaires du bot lui-même
+# 🛑 Ignorer les commentaires du bot lui-même
 if comment_author == bot_username:
     print(f"⛔ Ignoré : commentaire fait par le bot lui-même ({bot_username})")
     sys.exit(0)
 
-# ✍️ Étape 1 : Construire le prompt pour Gemini
-prompt = f"""
-Tu es un reviewer intelligent dans une Pull Request GitHub.
+# 🧠 Construction du prompt
+prompt = f"""Tu es un reviewer intelligent dans une Pull Request GitHub.
 Voici un commentaire d’un développeur (@{comment_author}) :
 
 \"\"\"{comment_body}\"\"\"
@@ -44,65 +37,45 @@ Voici un commentaire d’un développeur (@{comment_author}) :
 Réponds de manière claire, utile, technique et concise.
 """
 
-# 🧠 Étape 2 : Appeler l’API Gemini
-gemini_headers = {
-    "Content-Type": "application/json",
-    "x-goog-api-key": gemini_api_key
+# 🔥 Appel à Gemini (comme dans le bon script)
+model = "models/gemini-2.0-flash"
+endpoint = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent?key={api_key}"
+
+headers = {
+    "Content-Type": "application/json"
 }
 
-gemini_data = {
-    "contents": [{
-        "parts": [{"text": prompt}],
-        "role": "user"
-    }],
-    "generationConfig": {
-        "temperature": 0.7,
-        "maxOutputTokens": 512
-    }
+data = {
+    "contents": [
+        {
+            "parts": [
+                { "text": prompt }
+            ]
+        }
+    ]
 }
 
 try:
-    response = requests.post(gemini_url, headers=gemini_headers, json=gemini_data)
-    print(f"DEBUG - Status code Gemini : {response.status_code}")
+    response = requests.post(endpoint, headers=headers, json=data)
     print("🔎 Réponse brute Gemini:", json.dumps(response.json(), indent=2))
 
-    response_json = response.json()
-    candidates = response_json.get("candidates", [])
-    generated_reply = ""
-
-    if candidates:
-        candidate = candidates[0]
-        
-        # ✅ Essayer avec content.parts
-        content = candidate.get("content", {})
-        parts = content.get("parts", [])
-        for part in parts:
-            if "text" in part:
-                generated_reply += part["text"]
-
-        # ✅ Essayer avec content["text"] si parts vide
-        if not generated_reply.strip():
-            text = content.get("text")
-            if text:
-                generated_reply = text
-
-        # ✅ Essayer avec output["text"] si toujours vide
-        if not generated_reply.strip():
-            output = candidate.get("output", {})
-            if isinstance(output, dict):
-                text = output.get("text")
-                if text:
-                    generated_reply = text
+    if response.status_code != 200:
+        generated_reply = f"⚠️ Erreur Gemini ({response.status_code})"
+    else:
+        content = response.json()["candidates"][0]["content"]
+        if isinstance(content, dict) and "parts" in content:
+            generated_reply = "".join([part["text"] for part in content["parts"] if "text" in part])
+        else:
+            generated_reply = str(content)  # fallback
 
     if not generated_reply.strip():
-        print("⚠️ Gemini n'a généré aucune réponse utile.")
         generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse utile."
 
 except Exception as e:
-    print(f"❌ Exception lors de l'appel à Gemini : {e}")
-    generated_reply = f"⚠️ Une erreur est survenue en traitant votre commentaire, @{comment_author}."
+    print(f"❌ Exception Gemini : {e}")
+    generated_reply = f"⚠️ Une erreur est survenue, @{comment_author}"
 
-# 💬 Construire le message final à poster sur la PR
+# 🔧 Construction du commentaire à poster
 reply = f"""🔥 Merci @{comment_author} pour ton commentaire :
 > {comment_body}
 
@@ -110,20 +83,19 @@ reply = f"""🔥 Merci @{comment_author} pour ton commentaire :
 {generated_reply}
 """
 
-# 🔐 Étape 3 : Générer le JWT GitHub
+# 🔐 Authentification GitHub
 with open(private_key_path, "r") as f:
     private_key = f.read()
 
 now = int(time.time())
 payload = {
     "iat": now,
-    "exp": now + (10 * 60),
+    "exp": now + 600,
     "iss": app_id
 }
 
 jwt_token = jwt.encode(payload, private_key, algorithm="RS256")
 
-# 🪪 Étape 4 : Obtenir le token d’installation GitHub
 access_token_url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
 headers_jwt = {
     "Authorization": f"Bearer {jwt_token}",
@@ -132,24 +104,24 @@ headers_jwt = {
 
 response = requests.post(access_token_url, headers=headers_jwt)
 if response.status_code != 201:
-    print(f"❌ Impossible d'obtenir le token d'installation : {response.status_code}")
-    print(response.text)
+    print(f"❌ Erreur lors de la récupération du token GitHub : {response.status_code}")
     sys.exit(1)
 
 token = response.json()["token"]
 
-# 💬 Étape 5 : Poster le commentaire dans la PR
+# 💬 Poster la réponse sur la PR
 comment_url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
-headers = {
+headers_post = {
     "Authorization": f"Bearer {token}",
     "Accept": "application/vnd.github.v3+json"
 }
-payload = {"body": reply}
+payload = { "body": reply }
 
 print("💬 Envoi de la réponse :", reply)
-resp = requests.post(comment_url, headers=headers, json=payload)
+post = requests.post(comment_url, headers=headers_post, json=payload)
 
-if resp.status_code == 201:
-    print("✅ Réponse postée avec succès")
+if post.status_code == 201:
+    print("✅ Commentaire posté avec succès")
 else:
-    print(f"❌ Erreur {resp.status_code} : {resp.text}")
+    print(f"❌ Erreur lors de l'envoi du commentaire : {post.status_code}")
+    print(post.text)
