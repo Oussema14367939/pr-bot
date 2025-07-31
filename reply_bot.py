@@ -3,6 +3,7 @@ import sys
 import time
 import jwt  # PyJWT
 import requests
+import json
 
 # 🔧 Récupération sécurisée des variables
 def get_env_var(name):
@@ -46,7 +47,7 @@ Réponds de manière claire, utile, technique et concise.
 # 🧠 Étape 2 : Appeler l’API Gemini
 gemini_headers = {
     "Content-Type": "application/json",
-    "x-goog-api-key": gemini_api_key  # ✅ Correct pour une clé DeepSeek / Gemini
+    "x-goog-api-key": gemini_api_key
 }
 
 gemini_data = {
@@ -63,28 +64,39 @@ gemini_data = {
 try:
     response = requests.post(gemini_url, headers=gemini_headers, json=gemini_data)
     print(f"DEBUG - Status code Gemini : {response.status_code}")
-    print(f"DEBUG - Response Gemini : {response.text}")
+    print("🔎 Réponse brute Gemini:", json.dumps(response.json(), indent=2))
 
-    #if response.status_code != 200:
-        #print(f"❌ Erreur Gemini {response.status_code} : {response.text}")
-        #generated_reply = f"⚠️ Désolé @{comment_author}, une erreur est survenue avec le moteur d'IA."
-    #else:
     response_json = response.json()
     candidates = response_json.get("candidates", [])
     generated_reply = ""
 
     if candidates:
-        content = candidates[0].get("content", {})
+        candidate = candidates[0]
+        
+        # ✅ Essayer avec content.parts
+        content = candidate.get("content", {})
         parts = content.get("parts", [])
         for part in parts:
             if "text" in part:
                 generated_reply += part["text"]
 
-    if not generated_reply.strip():
-        print("⚠️ Gemini n'a généré aucune réponse.")
-        print("🧾 Réponse brute :", response_json)
-        generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse utile."
+        # ✅ Essayer avec content["text"] si parts vide
+        if not generated_reply.strip():
+            text = content.get("text")
+            if text:
+                generated_reply = text
 
+        # ✅ Essayer avec output["text"] si toujours vide
+        if not generated_reply.strip():
+            output = candidate.get("output", {})
+            if isinstance(output, dict):
+                text = output.get("text")
+                if text:
+                    generated_reply = text
+
+    if not generated_reply.strip():
+        print("⚠️ Gemini n'a généré aucune réponse utile.")
+        generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse utile."
 
 except Exception as e:
     print(f"❌ Exception lors de l'appel à Gemini : {e}")
