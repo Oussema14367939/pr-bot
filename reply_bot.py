@@ -28,6 +28,11 @@ if comment_author == bot_username:
     print(f"⛔ Ignoré : commentaire fait par le bot lui-même ({bot_username})")
     sys.exit(0)
 
+# 📛 Vérifier la présence de la mention @prhelper
+if "@prhelper" not in comment_body.lower():
+    print("🔕 Ignoré : le commentaire ne contient pas @prhelper")
+    sys.exit(0)
+
 # 🧠 Construction du prompt
 prompt = f"""Tu es un reviewer intelligent dans une Pull Request GitHub.
 Voici un commentaire d’un développeur (@{comment_author}) :
@@ -37,7 +42,7 @@ Voici un commentaire d’un développeur (@{comment_author}) :
 Réponds de manière claire, utile, technique et concise.
 """
 
-# 🔥 Appel à Gemini (comme dans le bon script)
+# 🔥 Appel à Gemini
 model = "models/gemini-2.0-flash"
 endpoint = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent?key={api_key}"
 
@@ -66,7 +71,7 @@ try:
         if isinstance(content, dict) and "parts" in content:
             generated_reply = "".join([part["text"] for part in content["parts"] if "text" in part])
         else:
-            generated_reply = str(content)  # fallback
+            generated_reply = str(content)
 
     if not generated_reply.strip():
         generated_reply = f"⚠️ Désolé @{comment_author}, je n'ai pas pu générer de réponse utile."
