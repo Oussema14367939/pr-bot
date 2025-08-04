@@ -7,8 +7,7 @@ def generate_comment(fichiers, auteur, date):
 
     commentaire = f"🧠 **Revue intelligente des fichiers modifiés :**\n"
 
-    api_key = os.getenv("DEEPSEEK_API_KEY") 
-
+    api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
         return "❌ Clé API Gemini manquante."
 
@@ -37,28 +36,32 @@ Réponds uniquement pour ce fichier.
 """
 
         data = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": prompt}
-                    ]
-                }
-            ]
+            "prompt": {
+                "text": prompt
+            },
+            "temperature": 0.2,
+            "maxOutputTokens": 512
         }
 
-        response = requests.post(endpoint, headers=headers, json=data)
+        try:
+            response = requests.post(endpoint, headers=headers, json=data)
+        except Exception as e:
+            commentaire += f"\n❌ Erreur réseau lors de la requête Gemini pour `{fichier}` : {e}\n"
+            continue
 
         if response.status_code != 200:
             commentaire += f"\n❌ Erreur Gemini pour `{fichier}` : {response.status_code} - {response.text}\n"
             continue
 
         try:
-            content = response.json()["candidates"][0]["content"]
+            result_json = response.json()
+            content = result_json.get("candidates", [{}])[0].get("content", "")
+            if not content:
+                raise ValueError("Réponse vide")
         except Exception as e:
             commentaire += f"\n⚠️ Erreur de parsing de réponse Gemini pour `{fichier}` : {e}\n"
             continue
 
-        # On ajoute un bloc collapsible Markdown pour chaque fichier
         commentaire += (
             f"\n<details>\n"
             f"<summary>🗂️ Revue détaillée du fichier `{fichier}`</summary>\n\n"
