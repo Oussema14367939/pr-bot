@@ -9,6 +9,8 @@ from get_modified_files import get_modified_files
 from generate_comment import generate_comment
 from post_comment import post_comment
 
+from db_utils import insert_pr
+
 # Lire les arguments depuis GitHub Actions
 parser = argparse.ArgumentParser()
 parser.add_argument("--pr_number", required=True, type=int, help="Pull request number")
@@ -48,6 +50,18 @@ created_at_formatted = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").strft
 # Étape 3 : Générer un commentaire
 comment = generate_comment(modified_files, author, created_at_formatted, titre_pr)
 print("📝 Commentaire généré :\n", comment)
+
+# Enregistrement dans la base SQLite
+insert_pr(
+    repo=repo,
+    titre=titre_pr,
+    auteur=author,
+    date=created_at_formatted,
+    score=None,  # ou une valeur de score IA si tu veux la calculer
+    statut="En attente",
+    commentaire=comment
+)
+
 
 # Étape 4 : Poster le commentaire sur la PR
 print("🚀 Envoi du commentaire sur la Pull Request...")
