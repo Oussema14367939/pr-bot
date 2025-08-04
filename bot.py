@@ -52,15 +52,22 @@ comment = generate_comment(modified_files, author, created_at_formatted, titre_p
 print("📝 Commentaire généré :\n", comment)
 
 # Enregistrement dans la base SQLite
-insert_pr(
-    repo=repo,
-    titre=titre_pr,
-    auteur=author,
-    date=created_at_formatted,
-    score=None,  # ou une valeur de score IA si tu veux la calculer
-    statut="En attente",
-    commentaire=comment
-)
+print("⏳ Insertion de la PR en base...")
+try:
+    insert_pr(
+        repo=repo,
+        titre=titre_pr,
+        auteur=author,
+        date=created_at_formatted,
+        score=None,
+        statut="En attente",
+        commentaire=comment
+    )
+    print("✅ Insertion en base réussie")
+except Exception as e:
+    print(f"❌ Erreur lors de l'insertion en base : {e}")
+
+print("✅ Insertion terminée")
 
 
 # Étape 4 : Poster le commentaire sur la PR
