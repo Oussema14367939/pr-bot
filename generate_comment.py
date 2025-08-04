@@ -53,18 +53,21 @@ Réponds uniquement pour ce fichier.
             continue
 
         try:
-            content = response.json()["candidates"][0]["content"]
+            raw_content = response.json()["candidates"][0]["content"]
+            # Extraire et concaténer les textes dans 'parts'
+            content = "".join(part.get("text", "") for part in raw_content.get("parts", []))
         except Exception as e:
             commentaire += f"\n⚠️ Erreur de parsing de réponse Gemini pour `{fichier}` : {e}\n"
             continue
 
-        # On ajoute un bloc collapsible Markdown pour chaque fichier
+        # Ajouter au commentaire en Markdown
         commentaire += (
             f"\n<details>\n"
             f"<summary>🗂️ Revue détaillée du fichier `{fichier}`</summary>\n\n"
             f"{content}\n"
             f"</details>\n"
         )
+
 
     commentaire += f"\n---\n👤 Auteur : **{auteur}**\n📅 Créé le : **{date}**"
     return commentaire
