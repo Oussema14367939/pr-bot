@@ -4,6 +4,7 @@ from datetime import datetime
 DB_PATH = "prh.db"
 
 def insert_pr(repo, titre, auteur, date, score, statut, commentaire):
+    print(f"🔍 Connexion à la base : {DB_PATH}")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
