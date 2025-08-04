@@ -1,23 +1,24 @@
-import sqlite3
-from datetime import datetime
+# db_utils.py
+import requests
+import os
 
-DB_PATH = "prh.db"
+# Exemple : remplace cette URL par celle de ton ngrok ou localhost
+FLASK_API_URL = os.environ.get("FLASK_API_URL", "http://localhost:5000")
 
 def insert_pr(repo, titre, auteur, date, score, statut, commentaire):
-    print(f"🔍 Connexion à la base : {DB_PATH}")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO pr_analysees (repo, titre, auteur, date, score, statut, commentaire)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        repo,
-        titre,
-        auteur,
-        date if date else datetime.utcnow().isoformat(),
-        score,
-        statut,
-        commentaire
-    ))
-    conn.commit()
-    conn.close()
+    payload = {
+        "repo": repo,
+        "titre": titre,
+        "auteur": auteur,
+        "date": date,
+        "score": score,
+        "statut": statut,
+        "commentaire": commentaire
+    }
+    url = f"{FLASK_API_URL}/insert_pr"
+    print(f"🌐 Appel HTTP POST vers {url}...")
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        print("✅ Insertion distante réussie")
+    else:
+        raise Exception(f"❌ Insertion échouée : {response.status_code} {response.text}")
