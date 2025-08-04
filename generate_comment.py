@@ -5,9 +5,9 @@ def generate_comment(fichiers, auteur, date):
     if not fichiers:
         return f"📝 Aucun fichier modifié détecté.\n\n👤 Auteur : **{auteur}**\n📅 Créé le : **{date}**"
 
-    commentaire = f"🧠 Revue intelligente des fichiers modifiés :\n"
+    commentaire = "🧠 **Revue intelligente des fichiers modifiés**\n\n"
 
-    api_key = os.getenv("DEEPSEEK_API_KEY")  # ta clé API Gemini
+    api_key = os.getenv("DEEPSEEK_API_KEY")
 
     if not api_key:
         return "❌ Clé API Gemini manquante."
@@ -27,21 +27,26 @@ def generate_comment(fichiers, auteur, date):
             commentaire += f"\n⚠️ Impossible de lire le fichier `{fichier}` : {e}\n"
             continue
 
-        prompt = f"""Tu es un assistant intelligent pour la revue de code.
-Voici le contenu du fichier `{fichier}` soumis dans une Pull Request :
+        prompt = f"""
+Tu es un assistant intelligent pour la revue de code. Voici le contenu du fichier `{fichier}` soumis dans une Pull Request :
 
 {contenu}
 
-Donne une revue utile de ce fichier (bugs potentiels, clarté du code, améliorations possibles).
-Réponds uniquement pour ce fichier.
+Analyse ce fichier et génère un retour structuré avec les sections suivantes (utilise le format Markdown avec des emojis) :
+
+📌 Résumé : une ou deux phrases sur l’état global du fichier  
+🐞 Problèmes détectés : liste des problèmes potentiels ou points à améliorer  
+💡 Suggestions : améliorations possibles  
+✅ Code correct : parties positives à conserver  
+🧽 Nettoyage : indentation, lignes vides, commentaires, etc.
+
+Commence ta réponse directement sans phrases inutiles. Donne un contenu lisible et bien structuré.
 """
 
         data = {
             "contents": [
                 {
-                    "parts": [
-                        {"text": prompt}
-                    ]
+                    "parts": [{"text": prompt}]
                 }
             ]
         }
@@ -53,12 +58,12 @@ Réponds uniquement pour ce fichier.
             continue
 
         try:
-            content = response.json()["candidates"][0]["content"]
+            content = response.json()["candidates"][0]["content"]["parts"][0]["text"]
         except Exception as e:
             commentaire += f"\n⚠️ Erreur de parsing de réponse Gemini pour `{fichier}` : {e}\n"
             continue
 
-        commentaire += f"\n🗂️ **{fichier}**\n{content}\n"
+        commentaire += f"---\n\n🗂️ **Fichier : `{fichier}`**\n\n{content.strip()}\n\n"
 
-    commentaire += f"\n---\n👤 Auteur : **{auteur}**\n📅 Créé le : **{date}**"
+    commentaire += f"---\n\n👤 Auteur : **{auteur}**\n📅 Créé le : **{date}**"
     return commentaire
