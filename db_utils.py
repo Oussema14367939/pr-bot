@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime
-
+from datetime import datetime, timezone
 DB_PATH = "prh.db"
 
 def insert_pr(repo, titre, auteur, date, score, statut, commentaire):
@@ -14,7 +14,7 @@ def insert_pr(repo, titre, auteur, date, score, statut, commentaire):
         repo,
         titre,
         auteur,
-        date if date else datetime.utcnow().isoformat(),
+        date if date else datetime.now(timezone.utc).isoformat(),
         score,
         statut,
         commentaire
