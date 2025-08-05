@@ -29,16 +29,16 @@
         <tbody>
             {% for pr in pr_list %}
             <tr>
-                <td>{{ pr[0] }}</td>
-                <td>{{ pr[1] }}</td>
-                <td>{{ pr[2] }}</td>
-                <td>{{ pr[3] }}</td>
-                <td>{{ pr[4] }}</td>
-                <td>{{ pr[5] }}</td>
+                <td>{{ pr.id }}</td>
+                <td>{{ pr.titre }}</td>
+                <td>{{ pr.auteur }}</td>
+                <td>{{ pr.date }}</td>
+                <td>{{ pr.score }}</td>
+                <td>{{ pr.statut }}</td>
                 <td>
                     <details>
                         <summary>Voir le commentaire</summary>
-                        <pre style="white-space: pre-wrap;">{{ pr[6] }}</pre>
+                        <pre style="white-space: pre-wrap;">{{ pr.commentaire }}</pre>
                     </details>
                 </td>
             </tr>
