@@ -3,7 +3,7 @@ import requests
 import os
 
 # Exemple : remplace cette URL par celle de ton ngrok ou localhost
-FLASK_API_URL = os.environ.get("FLASK_API_URL", "https://4e5a65a893cb.ngrok-free.app")
+FLASK_API_URL = os.environ.get("FLASK_API_URL", "http://localhost:5000")
 
 def insert_pr(repo, titre, auteur, date, score, statut, commentaire):
     payload = {
