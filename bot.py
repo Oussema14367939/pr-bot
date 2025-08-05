@@ -62,8 +62,7 @@ print("📝 Commentaire généré :\n", comment)
 
 # Importer Flask app, db, et modèle
 from app import create_app
-from extensions import db
-from models import PullRequest
+
 
 # Créer l'app Flask et insérer en base dans le contexte app
 app = create_app()
