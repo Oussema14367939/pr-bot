@@ -1,15 +1,24 @@
 # bot.py
 
 import argparse
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import requests
+
 from datetime import datetime
 
 from get_modified_files import get_modified_files
 from generate_comment import generate_comment
 from post_comment import post_comment
 
-from db_utils import insert_pr
+from app.extensions import db
+from app.models import PullRequest
+
+
+# Suppression de l'ancien import SQLite
+# from db_utils import insert_pr
 
 # Lire les arguments depuis GitHub Actions
 parser = argparse.ArgumentParser()
@@ -51,24 +60,33 @@ created_at_formatted = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").strft
 comment = generate_comment(modified_files, author, created_at_formatted, titre_pr)
 print("📝 Commentaire généré :\n", comment)
 
-# Enregistrement dans la base SQLite
-print("⏳ Insertion de la PR en base...")
+# Importer Flask app, db, et modèle
+from app import create_app
+from extensions import db
+from models import PullRequest
+
+# Créer l'app Flask et insérer en base dans le contexte app
+app = create_app()
+
+print("⏳ Insertion de la PR en base PostgreSQL...")
 try:
-    insert_pr(
-        repo=repo,
-        titre=titre_pr,
-        auteur=author,
-        date=created_at_formatted,
-        score=None,
-        statut="En attente",
-        commentaire=comment
-    )
+    with app.app_context():
+        pr = PullRequest(
+            repo=repo,
+            titre=titre_pr,
+            auteur=author,
+            date=created_at_formatted,
+            score=None,
+            statut="En attente",
+            commentaire=comment
+        )
+        db.session.add(pr)
+        db.session.commit()
     print("✅ Insertion en base réussie")
 except Exception as e:
     print(f"❌ Erreur lors de l'insertion en base : {e}")
 
 print("✅ Insertion terminée")
-
 
 # Étape 4 : Poster le commentaire sur la PR
 print("🚀 Envoi du commentaire sur la Pull Request...")
