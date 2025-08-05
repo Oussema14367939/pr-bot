@@ -1,9 +1,7 @@
-# app/routes.py
-
 from flask import render_template, Blueprint, request, jsonify
-from datetime import datetime
 from .models import PullRequest
-from . import db
+from .extensions import db
+from datetime import datetime
 
 bp = Blueprint('main', __name__)
 
