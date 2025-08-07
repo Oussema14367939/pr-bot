@@ -3,24 +3,24 @@
 import argparse
 import sys
 import os
+import requests
+from datetime import datetime
+
+# Ajouter le chemin du répertoire contenant ce fichier dans sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import requests
-
-from datetime import datetime
+# 📦 Importation des modules de ton app Flask
+from app import create_app
+from app.extensions import db
+from app.models import PullRequest
 
 from get_modified_files import get_modified_files
 from generate_comment import generate_comment
 from post_comment import post_comment
 
-from app.extensions import db
-from app.models import PullRequest
+from auth import generate_jwt, get_installation_token, APP_ID, INSTALLATION_ID, PRIVATE_KEY_PATH
 
-
-# Suppression de l'ancien import SQLite
-# from db_utils import insert_pr
-
-# Lire les arguments depuis GitHub Actions
+# 🔧 Lire les arguments depuis GitHub Actions
 parser = argparse.ArgumentParser()
 parser.add_argument("--pr_number", required=True, type=int, help="Pull request number")
 parser.add_argument("--repo", required=True, help="Repository name (e.g. user/repo)")
@@ -30,17 +30,16 @@ args = parser.parse_args()
 pr_number = args.pr_number
 repo = args.repo
 
-from auth import generate_jwt, get_installation_token, APP_ID, INSTALLATION_ID, PRIVATE_KEY_PATH
-
+# 🔐 Authentification avec GitHub App
 jwt_token = generate_jwt(APP_ID, PRIVATE_KEY_PATH)
 token = get_installation_token(jwt_token, INSTALLATION_ID)
 
-# Étape 1 : Obtenir les fichiers modifiés
+# 📁 Récupération des fichiers modifiés depuis GitHub
 print("📁 Récupération des fichiers modifiés depuis GitHub...")
 modified_files = get_modified_files(token, repo, pr_number)
 print("✅ Fichiers modifiés :", modified_files)
 
-# Étape 2 : Récupérer infos sur l’auteur, la date, et le titre de la PR
+# 🧾 Récupérer infos sur l’auteur, la date, et le titre de la PR
 headers = {
     "Authorization": f"Bearer {token}",
     "Accept": "application/vnd.github.v3+json"
@@ -56,16 +55,11 @@ created_at = pr_data["created_at"]
 titre_pr = pr_data["title"]
 created_at_formatted = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M UTC")
 
-# Étape 3 : Générer un commentaire
+# 🧠 Générer un commentaire automatique
 comment = generate_comment(modified_files, author, created_at_formatted, titre_pr)
 print("📝 Commentaire généré :\n", comment)
 
-# Importer Flask app, db, et modèle
-from app import create_app
-from extensions import db
-from models import PullRequest
-
-# Créer l'app Flask et insérer en base dans le contexte app
+# 🗃️ Créer l'app Flask et insérer en base PostgreSQL
 app = create_app()
 
 print("⏳ Insertion de la PR en base PostgreSQL...")
@@ -86,8 +80,6 @@ try:
 except Exception as e:
     print(f"❌ Erreur lors de l'insertion en base : {e}")
 
-print("✅ Insertion terminée")
-
-# Étape 4 : Poster le commentaire sur la PR
+# 🚀 Poster le commentaire sur la PR
 print("🚀 Envoi du commentaire sur la Pull Request...")
 post_comment(token, repo, pr_number, comment)
