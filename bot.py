@@ -56,7 +56,7 @@ titre_pr = pr_data["title"]
 created_at_formatted = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M UTC")
 
 # 🧠 Générer un commentaire automatique
-comment = generate_comment(modified_files, author, created_at_formatted, titre_pr)
+comment, score, statut = generate_comment(modified_files, author, created_at_formatted, titre_pr)
 print("📝 Commentaire généré :\n", comment)
 
 # 🗃️ Créer l'app Flask et insérer en base PostgreSQL
@@ -70,8 +70,8 @@ try:
             titre=titre_pr,
             auteur=author,
             date=created_at_formatted,
-            score=None,
-            statut="En attente",
+            score=score,
+            statut=statut,
             commentaire=comment
         )
         db.session.add(pr)

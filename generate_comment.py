@@ -82,4 +82,4 @@ Réponds uniquement pour ce fichier.
         )
 
     commentaire += f"\n---\n👤 Auteur : **{auteur}**\n📅 Créé le : **{date}**"
-    return commentaire
+    return commentaire, score, statut
