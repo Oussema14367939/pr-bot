@@ -1,6 +1,7 @@
 from flask import Flask
 from .extensions import db
 from dotenv import load_dotenv
+from flask_cors import CORS  # ✅ Importer CORS
 import os
 
 def create_app():
@@ -12,6 +13,9 @@ def create_app():
     # 🔧 Configuration de la base de données via une variable d'environnement
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # ✅ Activer CORS pour permettre les requêtes du frontend React
+    CORS(app)
 
     # ⚙️ Initialisation des extensions
     db.init_app(app)

@@ -1,49 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>PR Helper Dashboard</title>
     <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial; padding: 20px; background-color: #f5f5f5; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #ccc; padding: 10px; }
-        th { background-color: #eee; }
-        details summary { cursor: pointer; font-weight: bold; }
-    </style>
+    <title>PR Helper Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>📊 PR Helper - Tableau de bord</h1>
+    <div class="container">
+        <aside class="sidebar">
+            <h2>📊 PR Helper</h2>
+            <nav>
+                <ul>
+                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#">Statistiques</a></li>
+                    <li><a href="#">Commentaires IA</a></li>
+                    <li><a href="#">Historique</a></li>
+                </ul>
+            </nav>
+        </aside>
 
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Titre</th>
-                <th>Auteur</th>
-                <th>Date</th>
-                <th>Score IA</th>
-                <th>Statut</th>
-                <th>Commentaire</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for pr in pr_list %}
-            <tr>
-                <td>{{ pr[0] }}</td>
-                <td>{{ pr[1] }}</td>
-                <td>{{ pr[2] }}</td>
-                <td>{{ pr[3] }}</td>
-                <td>{{ pr[4] }}</td>
-                <td>{{ pr[5] }}</td>
-                <td>
-                    <details>
-                        <summary>Voir le commentaire</summary>
-                        <pre style="white-space: pre-wrap;">{{ pr[6] }}</pre>
-                    </details>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <main class="main-content">
+            <header>
+                <h1>Bienvenue sur le tableau de bord</h1>
+                <p>Visualisez l’état des pull requests analysées par l’IA</p>
+            </header>
+
+            <!-- Section Statistiques -->
+            <section class="stats">
+                <div class="card">🔄 Total PR : {{ pr_list|length }}</div>
+                <div class="card">✅ PR traitées : {{ pr_list|selectattr('statut', 'equalto', 'Fait')|list|length }}</div>
+                <div class="card">⏳ En attente : {{ pr_list|selectattr('statut', 'equalto', 'En attente')|list|length }}</div>
+            </section>
+
+            <!-- Section Tableau -->
+            <section class="table-section">
+                <h2>Liste des Pull Requests</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Auteur</th>
+                            <th>Date</th>
+                            <th>Score IA</th>
+                            <th>Statut</th>
+                            <th>Commentaire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pr in pr_list %}
+                        <tr>
+                            <td>{{ pr.id }}</td>
+                            <td>{{ pr.titre }}</td>
+                            <td>{{ pr.auteur }}</td>
+                            <td>{{ pr.date }}</td>
+                            <td>{{ pr.score or 'None' }}</td>
+                            <td>{{ pr.statut }}</td>
+                            <td>
+                                <details>
+                                    <summary>Voir le commentaire</summary>
+                                    <pre style="white-space: pre-wrap;">{{ pr.commentaire }}</pre>
+                                </details>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
 </body>
 </html>
