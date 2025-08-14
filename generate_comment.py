@@ -13,7 +13,8 @@ def generate_comment(fichiers, auteur, date, titre_pr):
 
     # Simuler un score IA (pour l'instant aléatoire)
     score = random.randint(60, 100)
-    statut = "✅ Approuvée" if score >= 80 else "⚠️ À réviser"
+    statut = "Approuvée" if score >= 80 else "À réviser"
+
 
     commentaire = f"""\
 🧠 **Revue intelligente de la Pull Request**
