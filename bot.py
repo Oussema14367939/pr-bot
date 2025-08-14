@@ -44,8 +44,8 @@ headers = {
     "Authorization": f"Bearer {token}",
     "Accept": "application/vnd.github.v3+json"
 }
-pr_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-response = requests.get(pr_url, headers=headers)
+pr_api_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+response = requests.get(pr_api_url, headers=headers)
 if response.status_code != 200:
     raise Exception("❌ Erreur lors de la récupération des détails de la PR")
 
@@ -55,14 +55,17 @@ created_at = pr_data["created_at"]
 titre_pr = pr_data["title"]
 created_at_formatted = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M UTC")
 
+# 🔹 Construire l'URL publique GitHub de la PR
+github_pr_link = f"https://github.com/{repo}/pull/{pr_number}"
+
 # 🧠 Générer un commentaire automatique
 comment, score, statut = generate_comment(modified_files, author, created_at_formatted, titre_pr)
 print("📝 Commentaire généré :\n", comment)
 
-# 🗃️ Créer l'app Flask et insérer en base PostgreSQL
+# 🗃️ Créer l'app Flask et insérer en base
 app = create_app()
 
-print("⏳ Insertion de la PR en base PostgreSQL...")
+print("⏳ Insertion de la PR en base...")
 try:
     with app.app_context():
         pr = PullRequest(
@@ -72,8 +75,11 @@ try:
             date=created_at_formatted,
             score=score,
             statut=statut,
-            commentaire=comment
+            commentaire=comment,
+            pr_url=github_pr_link  # 🔹 On stocke le lien
         )
+        print("🔗 URL PR avant insertion :", pr.pr_url)
+
         db.session.add(pr)
         db.session.commit()
     print("✅ Insertion en base réussie")

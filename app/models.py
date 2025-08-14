@@ -12,6 +12,8 @@ class PullRequest(db.Model):
     score = db.Column(db.Integer)
     statut = db.Column(db.String(50))
     commentaire = db.Column(db.Text)
+    pr_url = db.Column(db.String, nullable=True)
+  # 🔹 Nouveau champ pour stocker le lien GitHub de la PR
 
     def to_dict(self):
         return {
@@ -22,5 +24,6 @@ class PullRequest(db.Model):
             "date": self.date,  # déjà une chaîne
             "score": self.score,
             "statut": self.statut,
-            "commentaire": self.commentaire
+            "commentaire": self.commentaire,
+            "pr_url": self.pr_url  # 🔹 On renvoie aussi le lien dans l'API
         }

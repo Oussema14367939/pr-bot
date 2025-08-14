@@ -1,3 +1,4 @@
+# app/routes.py
 from flask import Blueprint, request, jsonify
 from .models import PullRequest
 from .extensions import db
@@ -19,7 +20,8 @@ def get_all_prs():
                 "date": pr.date if pr.date else "",
                 "score": pr.score,
                 "statut": pr.statut,
-                "commentaire": pr.commentaire
+                "commentaire": pr.commentaire,
+                "pr_url": pr.pr_url   # ✅ Ajout du lien
             }
             for pr in pr_list
         ]
@@ -41,7 +43,8 @@ def insert_pr():
             date=datetime.strptime(data.get("date"), "%Y-%m-%d %H:%M:%S") if data.get("date") else datetime.utcnow(),
             score=data.get("score"),
             statut=data.get("statut"),
-            commentaire=data.get("commentaire")
+            commentaire=data.get("commentaire"),
+            pr_url=data.get("pr_url")  # ✅ Ajout ici aussi
         )
         db.session.add(pr)
         db.session.commit()
