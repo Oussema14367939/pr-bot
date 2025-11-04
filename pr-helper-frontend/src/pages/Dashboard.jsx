@@ -5,13 +5,18 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   LineChart, Line
 } from "recharts";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+
 
 export default function Dashboard() {
   const [prs, setPrs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
-  const [filterStatus, setFilterStatus] = useState("all"); // 🔹 filtre actif
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     fetch("http://localhost:5000/api/prs")
@@ -64,7 +69,6 @@ export default function Dashboard() {
     return "other";
   };
 
-  // Stats
   const totalPRs = prs.length;
   let approvedCount = 0;
   let toReviewCount = 0;
@@ -81,23 +85,35 @@ export default function Dashboard() {
 
   const avgScore = totalPRs > 0 ? (sumScore / totalPRs).toFixed(2) : 0;
 
-  // 🔹 PRs filtrées selon le filtre choisi
   const filteredPRs = prs.filter((pr) => {
     const key = getStatusKey(pr.statut);
     if (filterStatus === "all") return true;
     return key === filterStatus;
   });
 
-  // 📊 Données pour les graphiques
+  const totalPages = Math.ceil(filteredPRs.length / itemsPerPage);
+  const paginatedPRs = filteredPRs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
   const pieData = [
     { name: "Approuvées", value: approvedCount },
     { name: "À réviser", value: toReviewCount },
     { name: "Autres", value: otherCount },
   ];
 
-  const barData = pieData; // même données que le PieChart
+  const barData = pieData;
 
-  const lineData = prs.map((pr, index) => ({
+  const lineData = prs.map((pr) => ({
     name: `PR ${pr.id}`,
     score: Number(pr.score) || 0,
   }));
@@ -105,50 +121,20 @@ export default function Dashboard() {
   const COLORS = ["#4CAF50", "#FFC107", "#9E9E9E"];
 
   return (
-    <div className="p-6 bg-gray-900">
+    <div className="p-6 bg-gray-900 min-h-screen">
       <h1 className="text-3xl font-bold text-white mb-6">📊 PR Helper Dashboard</h1>
 
-      {/* Cartes de statistiques avec filtres */}
+      {/* Cartes de statistiques */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <StatCard
-          title="Total PR"
-          value={totalPRs}
-          color="bg-blue-500"
-          onClick={() => setFilterStatus("all")}
-          active={filterStatus === "all"}
-        />
-        <StatCard
-          title="Approuvées"
-          value={approvedCount}
-          color="bg-green-500"
-          onClick={() => setFilterStatus("approved")}
-          active={filterStatus === "approved"}
-        />
-        <StatCard
-          title="À réviser"
-          value={toReviewCount}
-          color="bg-yellow-500"
-          onClick={() => setFilterStatus("toReview")}
-          active={filterStatus === "toReview"}
-        />
-        <StatCard
-          title="Autres"
-          value={otherCount}
-          color="bg-gray-500"
-          onClick={() => setFilterStatus("other")}
-          active={filterStatus === "other"}
-        />
-        <StatCard
-          title="Score moyen"
-          value={avgScore}
-          color="bg-purple-500"
-          disabled
-        />
+        <StatCard title="Total PR" value={totalPRs} color="bg-blue-500" onClick={() => setFilterStatus("all")} active={filterStatus === "all"} />
+        <StatCard title="Approuvées" value={approvedCount} color="bg-green-500" onClick={() => setFilterStatus("approved")} active={filterStatus === "approved"} />
+        <StatCard title="À réviser" value={toReviewCount} color="bg-yellow-500" onClick={() => setFilterStatus("toReview")} active={filterStatus === "toReview"} />
+        <StatCard title="Autres" value={otherCount} color="bg-gray-500" onClick={() => setFilterStatus("other")} active={filterStatus === "other"} />
+        <StatCard title="Score moyen" value={avgScore} color="bg-purple-500" disabled />
       </div>
 
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* PieChart */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-semibold mb-4">Répartition des PR</h2>
           <PieChart width={300} height={300}>
@@ -162,7 +148,6 @@ export default function Dashboard() {
           </PieChart>
         </div>
 
-        {/* BarChart */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-semibold mb-4">Nombre de PR par statut</h2>
           <BarChart width={300} height={300} data={barData}>
@@ -174,7 +159,6 @@ export default function Dashboard() {
           </BarChart>
         </div>
 
-        {/* LineChart */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-semibold mb-4">Scores des PR</h2>
           <LineChart width={300} height={300} data={lineData}>
@@ -187,92 +171,101 @@ export default function Dashboard() {
         </div>
       </div>
 
-
       {/* Tableau filtré */}
       {loading ? (
-        <p>Chargement des Pull Requests...</p>
+        <p className="text-white">Chargement des Pull Requests...</p>
       ) : error ? (
         <p className="text-red-500">❌ Erreur : {error}</p>
       ) : filteredPRs.length === 0 ? (
-        <p>🚫 Aucune Pull Request trouvée pour ce filtre.</p>
+        <p className="text-white">🚫 Aucune Pull Request trouvée pour ce filtre.</p>
       ) : (
         <div className="overflow-x-auto bg-white rounded-lg shadow">
           <table className="min-w-full text-sm text-left text-gray-700">
-            <thead className="bg-gray-600">
+            
+            <thead>
               <tr>
                 <th className="px-4 py-2">ID</th>
-                <th className="px-4 py-2">Dépôt</th>
+                <th className="px-4 py-2">Repo</th>
                 <th className="px-4 py-2">Titre</th>
                 <th className="px-4 py-2">Auteur</th>
                 <th className="px-4 py-2">Date</th>
                 <th className="px-4 py-2">Score</th>
                 <th className="px-4 py-2">Statut</th>
-                <th className="px-4 py-2">Commentaire</th>
-                <th className="px-4 py-2">URL</th>
-
+                <th className="px-4 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPRs.map((pr) => {
-                const key = getStatusKey(pr.statut);
-                const displayLabel =
-                  key === "approved" ? "✅ Approuvée" : key === "toReview" ? "⚠️ À réviser" : pr.statut || "—";
-                const badgeColor =
-                  key === "approved" ? "bg-green-500" : key === "toReview" ? "bg-yellow-500" : "bg-gray-400";
-
-                return (
-                  <tr key={pr.id} className="border-b">
+              {paginatedPRs.map((pr) => (
+                <React.Fragment key={pr.id}>
+                  <tr className="border-b">
                     <td className="px-4 py-2">{pr.id}</td>
                     <td className="px-4 py-2">{pr.repo}</td>
-                    <td className="px-4 py-2">{pr.titre}</td>
+                    <td className="px-4 py-2">{pr.title}</td>
                     <td className="px-4 py-2">{pr.auteur}</td>
                     <td className="px-4 py-2">{pr.date}</td>
                     <td className="px-4 py-2">{pr.score}</td>
+                    <td className="px-4 py-2">{pr.statut}</td>
                     <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded-full text-white text-sm ${badgeColor}`}>{displayLabel}</span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className={expandedRows[pr.id] ? "" : "truncate max-w-xs"}>{pr.commentaire}</div>
-                      <button className="text-blue-500 hover:underline" onClick={() => toggleComment(pr.id)}>
-                        {expandedRows[pr.id] ? "Masquer" : "Afficher tout"}
+                      <button
+                        className="text-blue-500 hover:underline"
+                        onClick={() => toggleComment(pr.id)}
+                      >
+                        {expandedRows[pr.id] ? "Masquer" : "Voir"}
                       </button>
                     </td>
-                    <td className="px-4 py-2">
-                      {/* 🔹 Ici on met le lien vers GitHub PR */}
-                      {pr.url ? (
-                          <a
-                            href={pr.url.startsWith("http") ? pr.url : `https://${pr.url}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 underline"
-                          >
-                            Lien
-                          </a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
                   </tr>
-                );
-              })}
+                  {expandedRows[pr.id] && (
+                    <tr className="bg-gray-100">
+                      <td colSpan={8} className="px-4 py-2 text-gray-700">
+                        {pr.commentaires || "Aucun commentaire."}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
             </tbody>
+
+              
           </table>
+
+          {/* Pagination */}
+          <div className="flex justify-between items-center mt-4 px-4 py-2 bg-gray-200 rounded-b-lg">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              className="flex items-center px-3 py-1 bg-blue-500 text-white rounded disabled:opacity-50"
+            >
+              <FaChevronLeft className="mr-1" /> Précédent
+            </button>
+            <span>
+              Page {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="flex items-center px-3 py-1 bg-blue-500 text-white rounded disabled:opacity-50"
+            >
+              Suivant <FaChevronRight className="ml-1" />
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// Carte de stats cliquable
+// Composant StatCard
 function StatCard({ title, value, color, onClick, active, disabled }) {
   return (
     <div
-      onClick={!disabled ? onClick : undefined}
-      className={`p-4 rounded-lg shadow text-white flex flex-col items-center cursor-pointer transition transform hover:scale-105 
-        ${color} ${active ? "ring-4 ring-offset-2 ring-white" : ""} ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+      onClick={disabled ? undefined : onClick}
+      className={`p-4 rounded-lg shadow cursor-pointer ${color} ${
+        active ? "ring-2 ring-offset-2 ring-blue-400" : ""
+      } ${disabled ? "opacity-70 cursor-default" : ""}`}
     >
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="text-2xl font-bold">{value}</p>
+      <h3 className="text-sm font-medium text-white">{title}</h3>
+      <p className="text-2xl font-bold text-white">{value}</p>
     </div>
   );
 }
+
